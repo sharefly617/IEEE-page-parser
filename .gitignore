@@ -1,0 +1,52 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.env/
+.python-version
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Data & results
+output/
+
+
+# Model checkpoints
+*.pt
+*.pth
+
+# HDF5 datasets
+*.h5
+
+# Generated archives or backups
+*.tgz
+*.tar.gz
+
+# IDE/editor files
+.vscode/
+.idea/
+
+# Local tooling
+.ieeescraping/
+.pytest_cache/
+pytest-temp/
+agents.md
+
+# macOS
+.DS_Store
+
+# Python packaging
+build/
+dist/
+*.egg-info/

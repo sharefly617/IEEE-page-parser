@@ -1,0 +1,42 @@
+browser:
+  headless: false
+  # Use an installed browser instead of Playwright's bundled Chromium.
+  # Set to null to use bundled Chromium, or use chrome/msedge.
+  channel: chrome
+  executable_path: null
+  timeout_ms: 30000
+  navigation_timeout_ms: 60000
+  user_data_dir: null
+  scroll_pause_ms: 250
+  max_scrolls: 80
+  auto_scroll: false
+  load_all_images_via_cdp: true
+  wait_for_mathjax: true
+  expand_references: true
+  screenshot: true
+  extra_wait_ms: 1000
+extractor:
+  content_selectors:
+    - "#BodyWrapper #article"
+    - ".document-text #article"
+    - "article"
+    - "main"
+    - "[role='main']"
+    - ".article-content"
+    - ".document-viewer"
+    - ".paper-content"
+  remove_selectors:
+    - "nav"
+    - "header"
+    - "footer"
+    - "aside"
+    - ".advertisement"
+    - ".recommended"
+    - ".related-content"
+    - ".cookie-banner"
+    - ".modal"
+    - ".login-prompt"
+archive:
+  delay_seconds: 1.0
+  retries: 2
+  max_concurrency: 1
