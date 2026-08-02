@@ -38,6 +38,21 @@ python main.py --url "https://ieeexplore.ieee.org/document/10684554" --output .\
 也可在 `config.yaml` 中设置 `browser.channel: chrome`、`msedge` 或独立的 `browser.user_data_dir`。  
 You may set `browser.channel: chrome`, `msedge`, or a separate `browser.user_data_dir` in `config.yaml`.
 
+For institution-protected pages, use a persistent profile and manual login. The headed browser pauses while you select the institution and complete authentication; press Enter in the terminal to continue:
+
+```yaml
+browser:
+  channel: chrome
+  headless: false
+  user_data_dir: "C:/Users/YourName/AppData/Local/IEEE-archiver-profile"
+```
+
+```powershell
+python main.py --url "https://ieeexplore.ieee.org/document/10684554" --manual-login --format all
+```
+
+The tool does not enter credentials, solve CAPTCHA, or bypass institution access controls. Close any normal Chrome process using the same profile first.
+
 ## 批量处理 / Batch Mode
 
 将授权 URL 每行写入 `urls.txt`，程序会去重并独立记录失败项。  

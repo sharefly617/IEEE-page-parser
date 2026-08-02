@@ -30,6 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--wait-for-mathjax", action="store_true")
     parser.add_argument("--save-screenshot", action="store_true")
     parser.add_argument("--offline-check", action="store_true")
+    parser.add_argument("--manual-login", action="store_true", help="pause for manual IEEE institution login")
     return parser
 
 
@@ -50,7 +51,8 @@ def main() -> int:
             try:
                 result = archive_one(url, args.output, config, args.format,
                                      wait_for_mathjax=True if args.wait_for_mathjax else None,
-                                     save_screenshot=True if args.save_screenshot else None)
+                                     save_screenshot=True if args.save_screenshot else None,
+                                     manual_login=True if args.manual_login else None)
                 if args.offline_check:
                     result["offline_check"] = "passed" if result.get("valid") else "failed"
                 break

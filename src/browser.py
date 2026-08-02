@@ -63,7 +63,8 @@ def capture_page(url: str, raw_dir: Path, *, headless: bool = True,
                 max_scrolls: int = 80, extra_wait_ms: int = 1000,
                 channel: Optional[str] = None, executable_path: Optional[str] = None,
                 expand_references: bool = True, asset_dir: Optional[Path] = None,
-                auto_scroll: bool = True, load_all_images_via_cdp: bool = False) -> str:
+                auto_scroll: bool = True, load_all_images_via_cdp: bool = False,
+                manual_login: bool = False) -> str:
     """Capture the final browser DOM. Playwright is imported lazily for testability."""
     if not url.lower().startswith(("http://", "https://")):
         raise ValueError("Only http(s) URLs are allowed")
@@ -92,6 +93,12 @@ def capture_page(url: str, raw_dir: Path, *, headless: bool = True,
             page.set_default_timeout(timeout_ms)
             page.set_default_navigation_timeout(navigation_timeout_ms)
             page.goto(url, wait_until="domcontentloaded")
+            if manual_login:
+                if headless:
+                    raise BrowserError("--manual-login requires browser.headless: false")
+                print("\n请在打开的浏览器中完成 IEEE institution 登录。完成后回到此终端按 Enter 继续...", flush=True)
+                input()
+                page.reload(wait_until="domcontentloaded")
             try:
                 page.wait_for_load_state("networkidle", timeout=navigation_timeout_ms)
             except Exception:

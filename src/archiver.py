@@ -26,15 +26,17 @@ def slugify(url: str, title: str = "paper") -> str:
 
 
 def archive_one(url: str, output: Path, config: Dict[str, Any], formats: str = "all",
-                *, wait_for_mathjax: Optional[bool] = None, save_screenshot: Optional[bool] = None) -> Dict[str, Any]:
+                *, wait_for_mathjax: Optional[bool] = None, save_screenshot: Optional[bool] = None,
+                manual_login: Optional[bool] = None) -> Dict[str, Any]:
     if not url.startswith(("http://", "https://")):
         raise ValueError("Only http(s) URLs are allowed")
     browser_cfg = config.get("browser", {})
     extractor_cfg = config.get("extractor", {})
+    manual_login_enabled = browser_cfg.get("manual_login", False) if manual_login is None else manual_login
     # Capture into a temporary URL slug first, then metadata determines final folder name.
     provisional = output / "_working" / slugify(url)
     raw_dir = provisional / "raw"
-    html = capture_page(url, raw_dir, headless=browser_cfg.get("headless", True),
+    html = capture_page(url, raw_dir, headless=False if manual_login_enabled else browser_cfg.get("headless", True),
                         user_data_dir=browser_cfg.get("user_data_dir"), timeout_ms=browser_cfg.get("timeout_ms", 30000),
                         navigation_timeout_ms=browser_cfg.get("navigation_timeout_ms", 60000),
                         wait_for_mathjax=browser_cfg.get("wait_for_mathjax", True) if wait_for_mathjax is None else wait_for_mathjax,
@@ -45,7 +47,8 @@ def archive_one(url: str, output: Path, config: Dict[str, Any], formats: str = "
                         expand_references=browser_cfg.get("expand_references", True),
                         asset_dir=provisional / "markdown" / "assets",
                         auto_scroll=browser_cfg.get("auto_scroll", True),
-                        load_all_images_via_cdp=browser_cfg.get("load_all_images_via_cdp", False))
+                        load_all_images_via_cdp=browser_cfg.get("load_all_images_via_cdp", False),
+                        manual_login=manual_login_enabled)
     extractor = PaperExtractor(extractor_cfg.get("content_selectors"), extractor_cfg.get("remove_selectors"))
     result = extractor.extract(html, url)
     final_dir = output / slugify(url, result.metadata.title)

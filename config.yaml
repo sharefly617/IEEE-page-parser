@@ -7,6 +7,7 @@ browser:
   timeout_ms: 30000
   navigation_timeout_ms: 60000
   user_data_dir: null
+  manual_login: false
   scroll_pause_ms: 250
   max_scrolls: 80
   auto_scroll: false
