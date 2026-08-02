@@ -129,6 +129,9 @@ def markdown_tex(tex: str) -> str:
             value = r"\begin{aligned}" + body + r"\end{aligned}"
         else:
             value = body.strip()
+    # Markdown MathJax/KaTeX cannot reliably combine alignment environments
+    # with equation tags. Formula numbers remain available in formulas.json.
+    value = re.sub(r"\\(?:tag\*?|notag)\s*\{[^{}]*\}", "", value)
     # Labels are useful in a LaTeX document but commonly make Markdown
     # MathJax/KaTeX fail; formula order and numbers remain in formulas.json.
     value = re.sub(r"\\label\{[^{}]*\}", "", value)

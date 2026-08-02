@@ -86,7 +86,7 @@ You can enable manual login for one run:
 ```powershell
   python main.py `
     --url "https://ieeexplore.ieee.org/document/8641299" `
-    --output .\output-v3 `
+    --output .\output `
     --format all `
     --manual-login `
     --wait-for-mathjax `
@@ -143,8 +143,8 @@ Original TeX is preferred for formulas. If conversion is uncertain, SVG/DOM is r
 
 ### Markdown 与 LaTeX 公式 / Markdown versus LaTeX formulas
 
-Markdown 使用 `$...$` 表示行内公式，使用 `$$...$$` 表示独立公式；导出器会移除原始 TeX 外层分隔符，并将 `equation`、`align` 等环境转换为 MathJax/KaTeX 可解析的显示公式。  
-Markdown uses `$...$` for inline formulas and `$$...$$` for display formulas. The exporter removes existing outer TeX delimiters and converts `equation`, `align`, and similar environments into MathJax/KaTeX-compatible display math.
+Markdown 使用 `$...$` 表示行内公式，使用 `$$...$$` 表示独立公式；导出器会移除原始 TeX 外层分隔符，并将 `equation`、`align` 等环境转换为 MathJax/KaTeX 可解析的显示公式。为避免兼容性问题，Markdown 不输出 `align + \\tag` 组合，公式编号保存在 `formulas/formulas.json`。  
+Markdown uses `$...$` for inline formulas and `$$...$$` for display formulas. The exporter removes existing outer TeX delimiters and converts `equation`, `align`, and similar environments into MathJax/KaTeX-compatible display math. To avoid compatibility problems, Markdown does not emit an `align + \\tag` combination; formula numbers remain in `formulas/formulas.json`.
 
 LaTeX 工程保持 LaTeX 语法，使用 `\(...\)`、`\[...\]` 或 `equation`/`align` 环境；两种输出不会共享 Markdown 分隔符。  
 The LaTeX project keeps LaTeX syntax with `\(...\)`, `\[...\]`, or `equation`/`align` environments; it does not reuse Markdown delimiters.
