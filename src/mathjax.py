@@ -84,6 +84,9 @@ def is_formula_node(node: Tag) -> bool:
 def _display(node: Tag) -> bool:
     if node.name in {"disp-formula", "display-formula"}:
         return True
+    tex = formula_tex(node)
+    if tex and re.search(r"\\begin\{(?:equation\*?|align\*?|alignat\*?|gather\*?|multline\*?|split)\}", tex):
+        return True
     if "formula" in " ".join(node.get("class", [])).lower():
         source = node.select_one(".tex, .tex2jax_ignore")
         if source and "\\begin{" in source.get_text():
@@ -94,6 +97,42 @@ def _display(node: Tag) -> bool:
     if "display" in classes.lower() or node.get("data-display") in {"true", "block"}:
         return True
     return node.find_parent(["div", "figure", "section", "disp-formula", "display-formula"]) is not None and node.name in {"math", "mjx-container"}
+
+
+def markdown_tex(tex: str) -> str:
+    r"""Normalize source TeX for Markdown MathJax/KaTeX delimiters.
+
+    Markdown already supplies the math delimiters, so nested `$`, `\[`, or
+    equation environments must be removed before wrapping the source.
+    """
+    value = tex.strip()
+    wrappers = (("\\[", "\\]"), ("\\(", "\\)"), ("$$", "$$"), ("$", "$"))
+    changed = True
+    while changed:
+        changed = False
+        for start, end in wrappers:
+            if value.startswith(start) and value.endswith(end) and len(value) > len(start) + len(end):
+                value = value[len(start):-len(end)].strip()
+                changed = True
+                break
+    value = normalize_tex(value)
+    # equation/align environments are LaTeX document environments. Inside a
+    # Markdown display delimiter, aligned is the portable MathJax equivalent.
+    environment_pattern = re.compile(
+        r"^\\begin\{(equation\*?|align\*?|alignat\*?|gather\*?|multline\*?|split)\}(.*?)\\end\{\1\}$",
+        re.S,
+    )
+    match = environment_pattern.match(value.strip())
+    if match:
+        environment, body = match.groups()
+        if environment.startswith(("align", "alignat", "gather", "multline", "split")):
+            value = r"\begin{aligned}" + body + r"\end{aligned}"
+        else:
+            value = body.strip()
+    # Labels are useful in a LaTeX document but commonly make Markdown
+    # MathJax/KaTeX fail; formula order and numbers remain in formulas.json.
+    value = re.sub(r"\\label\{[^{}]*\}", "", value)
+    return value.strip()
 
 
 def collect_formulas(soup: BeautifulSoup) -> List[Formula]:

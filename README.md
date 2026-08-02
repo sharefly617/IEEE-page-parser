@@ -109,6 +109,9 @@ python main.py --url "https://ieeexplore.ieee.org/document/10684554" --output .\
 `--format` 支持 `raw`、`markdown`、`latex` 和 `all`。  
 `--format` supports `raw`, `markdown`, `latex`, and `all`.
 
+滚动速度可在 `config.yaml` 中通过 `browser.scroll_pause_ms` 调整，或使用 `--scroll-pause-ms 50` 临时覆盖。  
+Adjust scrolling speed with `browser.scroll_pause_ms` in `config.yaml`, or override it for one run with `--scroll-pause-ms 50`.
+
 ## 批量归档 / Batch Mode
 
 `urls.txt` 每行放置一个已授权 URL。程序会去重，并独立记录每篇论文的失败。  
@@ -146,4 +149,3 @@ python -m pytest -q
 
 测试不需要登录 IEEE，覆盖 MathJax、Markdown、IEEEtran 结构、正文清理、资源安全和参考文献处理。  
 Tests do not require an IEEE session and cover MathJax, Markdown, IEEEtran structure, content cleaning, asset safety, and references.
-

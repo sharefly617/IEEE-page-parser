@@ -8,8 +8,9 @@ browser:
   navigation_timeout_ms: 60000
   user_data_dir: null
   manual_login: false
-  scroll_pause_ms: 250
+  scroll_pause_ms: 100
   max_scrolls: 80
+  scroll_passes: 2
   auto_scroll: true
   load_all_images_via_cdp: true
   wait_for_mathjax: true

@@ -98,7 +98,7 @@ def capture_page(url: str, raw_dir: Path, *, headless: bool = True,
                 channel: Optional[str] = None, executable_path: Optional[str] = None,
                 expand_references: bool = True, asset_dir: Optional[Path] = None,
                 auto_scroll: bool = True, load_all_images_via_cdp: bool = False,
-                manual_login: bool = False) -> str:
+                manual_login: bool = False, scroll_passes: int = 2) -> str:
     """Capture the final browser DOM. Playwright is imported lazily for testability."""
     if not url.lower().startswith(("http://", "https://")):
         raise ValueError("Only http(s) URLs are allowed")
@@ -152,7 +152,7 @@ def capture_page(url: str, raw_dir: Path, *, headless: bool = True,
             if auto_scroll:
                 # Optional fallback for sites whose lazy loader hides URLs in
                 # application state rather than data-* attributes.
-                for pass_number in range(3):
+                for pass_number in range(max(1, scroll_passes)):
                     page.evaluate("window.scrollTo(0, 0)")
                     page.wait_for_timeout(scroll_pause_ms)
                     stable_steps = 0

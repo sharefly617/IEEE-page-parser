@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 from bs4 import NavigableString, Tag
 
-from .mathjax import _display, formula_tex, is_formula_node
+from .mathjax import _display, formula_tex, is_formula_node, markdown_tex
 from .models import PaperMetadata
 
 
@@ -18,7 +18,8 @@ def _inline(node: object, assets: Dict[str, str]) -> str:
     if is_formula_node(node):
         tex = formula_tex(node)
         if tex:
-            return f"$${tex}$$" if _display(node) else f"${tex}$"
+            value = markdown_tex(tex)
+            return f"$${value}$$" if _display(node) else f"${value}$"
         return "<!-- formula requires manual review -->" + str(node)
     name = node.name.lower()
     inner = "".join(_inline(child, assets) for child in node.children)

@@ -27,6 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--config", type=Path, default=Path("config.yaml"))
     parser.add_argument("--delay", type=float, default=None)
     parser.add_argument("--retries", type=int, default=None)
+    parser.add_argument("--scroll-pause-ms", type=int, default=None, help="delay between lazy-load scroll steps")
     parser.add_argument("--wait-for-mathjax", action="store_true")
     parser.add_argument("--save-screenshot", action="store_true")
     parser.add_argument("--offline-check", action="store_true")
@@ -41,6 +42,8 @@ def main() -> int:
         return 2
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     config = load_config(args.config)
+    if args.scroll_pause_ms is not None:
+        config.setdefault("browser", {})["scroll_pause_ms"] = max(0, args.scroll_pause_ms)
     delay = args.delay if args.delay is not None else config.get("archive", {}).get("delay_seconds", 1.0)
     retries = args.retries if args.retries is not None else config.get("archive", {}).get("retries", 2)
     urls = [args.url] if args.url else list(dict.fromkeys(x.strip() for x in args.urls_file.read_text(encoding="utf-8").splitlines() if x.strip() and not x.strip().startswith("#")))

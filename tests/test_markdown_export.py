@@ -11,3 +11,11 @@ def test_markdown_preserves_formula_table_and_image():
     assert "$E=mc^2$" in text
     assert "| A | B |" in text
 
+
+def test_markdown_normalizes_latex_environment_and_delimiters():
+    soup = BeautifulSoup(r'<main><p><span class="formula" data-tex="$$\begin{equation}x &= y\tag{1}\end{equation}$$">x</span> <span data-tex="$a_b$">a</span></p></main>', "lxml")
+    text = to_markdown(soup.main, PaperMetadata(url="u", title="Test"))
+    assert "$$$$" not in text
+    assert r"$$x &= y\tag{1}$$" in text
+    assert r"\begin{equation}" not in text
+    assert "$a_b$" in text
