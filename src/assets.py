@@ -77,8 +77,8 @@ def download_assets_from_browser(page: object, html: str, page_url: str, assets_
     soup = BeautifulSoup(html, "lxml")
     urls = set()
     aliases: Dict[str, str] = {}
-    for node in soup.select("img[src], img[data-src], source[srcset], figure a[href], .figure a[data-fig-id][href], link[rel~='stylesheet']"):
-        for attr in ("src", "data-src", "href"):
+    for node in soup.select("img[src], img[data-src], img[data-lazy-src], img[data-original], img[data-url], source[srcset], figure a[href], .figure a[data-fig-id][href], link[rel~='stylesheet'], [style*='background-image']"):
+        for attr in ("src", "data-src", "data-lazy-src", "data-original", "data-url", "href"):
             raw = node.get(attr)
             if raw:
                 absolute = urljoin(page_url, raw)
@@ -89,6 +89,12 @@ def download_assets_from_browser(page: object, html: str, page_url: str, assets_
             for part in node["srcset"].split(","):
                 raw = part.strip().split(" ")[0]
                 absolute = urljoin(page_url, raw)
+                urls.add(absolute)
+                aliases[raw] = absolute
+        style = node.get("style", "")
+        for raw in re.findall(r"url\([\"']?([^)'\"]+)", style):
+            absolute = urljoin(page_url, raw)
+            if urlparse(absolute).scheme in {"http", "https"} and _safe_remote_host(urlparse(absolute).hostname or ""):
                 urls.add(absolute)
                 aliases[raw] = absolute
     result: Dict[str, str] = {}
@@ -106,6 +112,35 @@ def download_assets_from_browser(page: object, html: str, page_url: str, assets_
     for raw, absolute in aliases.items():
         if absolute in result:
             result[raw] = result[absolute]
+    # IEEE sometimes keeps the figure URL in a lazy/zoom anchor while the
+    # visible image is only available as a browser-rendered resource. Capture
+    # the rendered figure as a PNG when the authenticated request failed.
+    try:
+        figure_locator = page.locator("figure img, .figure img, img.document-ft-image")
+        for index in range(figure_locator.count()):
+            image = figure_locator.nth(index)
+            raw_src = image.get_attribute("src") or image.get_attribute("data-src")
+            parent_link = image.locator("xpath=ancestor::a[1]")
+            raw_href = parent_link.get_attribute("href")
+            if not raw_src and not raw_href:
+                continue
+            source_key = urljoin(page_url, raw_href or raw_src or "")
+            if source_key in result:
+                continue
+            filename = safe_filename(source_key or f"figure-{index}")
+            filename = str(Path(filename).with_suffix(".png"))
+            target = assets_dir / filename
+            image.scroll_into_view_if_needed()
+            image.screenshot(path=str(target), type="png")
+            relative = str(Path("assets") / filename).replace("\\", "/")
+            for raw in (raw_src, raw_href):
+                if raw:
+                    absolute = urljoin(page_url, raw)
+                    result[absolute] = relative
+                    result[raw] = relative
+    except Exception:
+        # A missing/hidden figure should not abort the rest of the archive.
+        pass
     return result
 
 

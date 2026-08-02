@@ -153,6 +153,7 @@ def capture_page(url: str, raw_dir: Path, *, headless: bool = True,
                     from .assets import download_assets_from_browser
                     import json
                     asset_map = download_assets_from_browser(page, html, url, asset_dir)
+                    LOGGER.info("Captured %d browser assets", len(asset_map))
                     (raw_dir / "asset-map.json").write_text(json.dumps(asset_map, ensure_ascii=False, indent=2), encoding="utf-8")
                 except Exception:
                     LOGGER.exception("Browser asset download failed; continuing with best-effort URL download")

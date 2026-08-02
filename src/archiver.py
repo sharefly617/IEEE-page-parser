@@ -74,6 +74,16 @@ def archive_one(url: str, output: Path, config: Dict[str, Any], formats: str = "
     if formats in {"all", "latex"}:
         write_latex(final_dir / "latex", result.body, result.metadata, assets)
     validation = validate_archive(final_dir)
+    figure_nodes = result.body.select("figure img, .figure img, img.document-ft-image")
+    missing_figures = []
+    for index, image in enumerate(figure_nodes, 1):
+        link = image.find_parent("a")
+        raw = link.get("href") if link and link.get("href") else image.get("src", "")
+        relative = assets.get(raw, assets.get(image.get("src", ""), ""))
+        if not relative or not (final_dir / "markdown" / relative).exists():
+            missing_figures.append(index)
+    if missing_figures:
+        validation.setdefault("warnings", []).append({"figures_needing_review": missing_figures})
     manual_review = [f.order for f in result.formulas if f.conversion_status != "ok"]
     if manual_review:
         validation.setdefault("warnings", []).append({"formulas_needing_review": manual_review})
