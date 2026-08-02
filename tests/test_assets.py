@@ -1,4 +1,4 @@
-from src.assets import _safe_remote_host, convert_gif_assets, safe_filename
+from src.assets import _safe_remote_host, convert_gif_assets, download_image_urls_from_html, safe_filename
 
 
 def test_safe_filename_is_local_and_stable():
@@ -20,3 +20,27 @@ def test_gif_assets_are_converted_to_png(tmp_path):
     result = convert_gif_assets(tmp_path, mapping)
     assert result["/figure.gif"] == "assets/figure.png"
     assert (tmp_path / "figure.png").exists()
+
+
+def test_downloads_image_urls_from_rendered_html(tmp_path):
+    class Response:
+        ok = True
+
+        def body(self):
+            return b"image-bytes"
+
+    class RequestContext:
+        def __init__(self):
+            self.urls = []
+
+        def get(self, url, headers=None):
+            self.urls.append(url)
+            return Response()
+
+    context = RequestContext()
+    mapping = download_image_urls_from_html(
+        '<div class="figure"><a href="/large.gif"><img src="/small.gif" data-src="/lazy.gif"></a></div>',
+        "https://example.com/paper", context, tmp_path,
+    )
+    assert "https://example.com/large.gif" in mapping
+    assert (tmp_path / mapping["https://example.com/large.gif"].split("/")[-1]).exists()

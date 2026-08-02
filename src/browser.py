@@ -1,4 +1,6 @@
 import logging
+import json
+import mimetypes
 import time
 from pathlib import Path
 from typing import Optional
@@ -9,6 +11,34 @@ LOGGER = logging.getLogger(__name__)
 
 class BrowserError(RuntimeError):
     pass
+
+
+def _capture_image_response(response: object, asset_dir: Path, asset_map: dict[str, str]) -> None:
+    """Persist image responses from the authenticated browser context."""
+    try:
+        request = response.request
+        resource_type = getattr(request, "resource_type", "")
+        headers = {str(k).lower(): str(v) for k, v in (response.headers or {}).items()}
+        content_type = headers.get("content-type", "").split(";", 1)[0].lower()
+        if resource_type != "image" and not content_type.startswith("image/"):
+            return
+        url = response.url
+        if not url.lower().startswith(("http://", "https://")):
+            return
+        from .assets import safe_filename
+        filename = safe_filename(url)
+        if Path(filename).suffix.lower() in {"", ".bin"}:
+            extension = mimetypes.guess_extension(content_type) or ".img"
+            filename = Path(filename).stem + extension
+        destination = asset_dir / filename
+        if not destination.exists():
+            body = response.body()
+            if body:
+                destination.write_bytes(body)
+        if destination.exists():
+            asset_map[url] = str(Path("assets") / filename).replace("\\", "/")
+    except Exception:
+        LOGGER.debug("Could not persist browser image response", exc_info=True)
 
 
 def _load_all_images_via_cdp(context: object, page: object) -> int:
@@ -26,7 +56,11 @@ def _load_all_images_via_cdp(context: object, page: object) -> int:
         const source = image.closest('picture');
         if (source) for (const item of source.querySelectorAll('source')) {
           const value = item.dataset.srcset || item.getAttribute('srcset');
-          if (value) value.split(',').forEach(part => add(part.trim().split(/\s+/)[0]));
+          if (value) {
+            const first = value.split(',')[0].trim().split(/\s+/)[0];
+            value.split(',').forEach(part => add(part.trim().split(/\s+/)[0]));
+            if (!image.currentSrc || image.currentSrc === image.src) image.src = new URL(first, document.baseURI).href;
+          }
           if (item.dataset.src) add(item.dataset.src);
         }
         const replacement = image.dataset.src || image.dataset.lazySrc || image.dataset.original || image.dataset.url;
@@ -89,6 +123,10 @@ def capture_page(url: str, raw_dir: Path, *, headless: bool = True,
             else:
                 browser = playwright.chromium.launch(**launch_options)
                 context = browser.new_context()
+            network_asset_map: dict[str, str] = {}
+            if asset_dir:
+                asset_dir.mkdir(parents=True, exist_ok=True)
+                context.on("response", lambda response: _capture_image_response(response, asset_dir, network_asset_map))
             page = context.new_page()
             page.set_default_timeout(timeout_ms)
             page.set_default_navigation_timeout(navigation_timeout_ms)
@@ -151,8 +189,8 @@ def capture_page(url: str, raw_dir: Path, *, headless: bool = True,
             if asset_dir:
                 try:
                     from .assets import download_assets_from_browser
-                    import json
                     asset_map = download_assets_from_browser(page, html, url, asset_dir)
+                    asset_map.update(network_asset_map)
                     LOGGER.info("Captured %d browser assets", len(asset_map))
                     (raw_dir / "asset-map.json").write_text(json.dumps(asset_map, ensure_ascii=False, indent=2), encoding="utf-8")
                 except Exception:

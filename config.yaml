@@ -10,7 +10,7 @@ browser:
   manual_login: false
   scroll_pause_ms: 250
   max_scrolls: 80
-  auto_scroll: false
+  auto_scroll: true
   load_all_images_via_cdp: true
   wait_for_mathjax: true
   expand_references: true

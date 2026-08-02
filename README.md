@@ -84,7 +84,14 @@ browser:
 You can enable manual login for one run:
 
 ```powershell
-python main.py --url "https://ieeexplore.ieee.org/document/10684554" --manual-login --format all
+  python main.py `
+    --url "https://ieeexplore.ieee.org/document/8641299" `
+    --output .\output-v3 `
+    --format all `
+    --manual-login `
+    --wait-for-mathjax `
+    --save-screenshot `
+    --offline-check
 ```
 
 复用配置目录前请关闭使用该目录的普通 Chrome/Edge 窗口。工具会启动新的浏览器进程，不会连接已经打开的普通浏览器窗口。  

@@ -3,6 +3,7 @@ import ipaddress
 import json
 import mimetypes
 import re
+import base64
 from pathlib import Path
 from typing import Dict, Iterable, Optional
 from urllib.parse import urljoin, urlparse
@@ -77,6 +78,7 @@ def download_assets_from_browser(page: object, html: str, page_url: str, assets_
     soup = BeautifulSoup(html, "lxml")
     urls = set()
     aliases: Dict[str, str] = {}
+    image_urls = set()
     for node in soup.select("img[src], img[data-src], img[data-lazy-src], img[data-original], img[data-url], source[srcset], figure a[href], .figure a[data-fig-id][href], link[rel~='stylesheet'], [style*='background-image']"):
         for attr in ("src", "data-src", "data-lazy-src", "data-original", "data-url", "href"):
             raw = node.get(attr)
@@ -85,12 +87,15 @@ def download_assets_from_browser(page: object, html: str, page_url: str, assets_
                 if urlparse(absolute).scheme in {"http", "https"} and _safe_remote_host(urlparse(absolute).hostname or ""):
                     urls.add(absolute)
                     aliases[raw] = absolute
+                    if node.name == "img" or node.find("img") is not None:
+                        image_urls.add(absolute)
         if node.get("srcset"):
             for part in node["srcset"].split(","):
                 raw = part.strip().split(" ")[0]
                 absolute = urljoin(page_url, raw)
                 urls.add(absolute)
                 aliases[raw] = absolute
+                image_urls.add(absolute)
         style = node.get("style", "")
         for raw in re.findall(r"url\([\"']?([^)'\"]+)", style):
             absolute = urljoin(page_url, raw)
@@ -99,16 +104,42 @@ def download_assets_from_browser(page: object, html: str, page_url: str, assets_
                 aliases[raw] = absolute
     result: Dict[str, str] = {}
     request_context = page.context.request
-    for asset_url in urls:
+    direct_result = download_image_urls_from_html(html, page_url, request_context, assets_dir)
+    result.update(direct_result)
+    # Download image URLs explicitly from the final HTML first. This is the
+    # primary path for manually authenticated IEEE pages; the browser context
+    # supplies the same cookies and headers as the visible page.
+    ordered_urls = list(image_urls) + [item for item in urls if item not in image_urls]
+    for asset_url in ordered_urls:
+        if asset_url in result:
+            continue
         try:
             response = request_context.get(asset_url, headers={"Referer": page_url})
             if not response.ok:
-                continue
+                raise RuntimeError(f"asset response status {response.status}")
             filename = safe_filename(asset_url)
             (assets_dir / filename).write_bytes(response.body())
             result[asset_url] = str(Path("assets") / filename).replace("\\", "/")
         except Exception:
-            continue
+            # A page fetch uses the authenticated document session and can
+            # succeed when APIRequestContext is rejected by an image CDN.
+            try:
+                payload = page.evaluate("""async (url) => {
+                  const response = await fetch(url, {credentials: 'include'});
+                  if (!response.ok) return null;
+                  const bytes = new Uint8Array(await response.arrayBuffer());
+                  let binary = '';
+                  const chunk = 0x8000;
+                  for (let i = 0; i < bytes.length; i += chunk)
+                    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+                  return btoa(binary);
+                }""", asset_url)
+                if payload:
+                    filename = safe_filename(asset_url)
+                    (assets_dir / filename).write_bytes(base64.b64decode(payload))
+                    result[asset_url] = str(Path("assets") / filename).replace("\\", "/")
+            except Exception:
+                continue
     for raw, absolute in aliases.items():
         if absolute in result:
             result[raw] = result[absolute]
@@ -141,6 +172,39 @@ def download_assets_from_browser(page: object, html: str, page_url: str, assets_
     except Exception:
         # A missing/hidden figure should not abort the rest of the archive.
         pass
+    return result
+
+
+def download_image_urls_from_html(html: str, page_url: str, request_context: object, assets_dir: Path) -> Dict[str, str]:
+    """Download only image/figure URLs found in final rendered HTML."""
+    from bs4 import BeautifulSoup
+    assets_dir.mkdir(parents=True, exist_ok=True)
+    soup = BeautifulSoup(html, "lxml")
+    urls = set()
+    for image in soup.select("img, source[srcset], figure a[href], .figure a[href]"):
+        for attr in ("src", "data-src", "data-lazy-src", "data-original", "data-url", "href"):
+            raw = image.get(attr)
+            if raw:
+                absolute = urljoin(page_url, raw)
+                if urlparse(absolute).scheme in {"http", "https"} and _safe_remote_host(urlparse(absolute).hostname or ""):
+                    urls.add(absolute)
+        for part in (image.get("srcset") or "").split(","):
+            raw = part.strip().split(" ")[0]
+            if raw:
+                absolute = urljoin(page_url, raw)
+                if urlparse(absolute).scheme in {"http", "https"} and _safe_remote_host(urlparse(absolute).hostname or ""):
+                    urls.add(absolute)
+    result = {}
+    for asset_url in urls:
+        try:
+            response = request_context.get(asset_url, headers={"Referer": page_url})
+            if not response.ok:
+                continue
+            filename = safe_filename(asset_url)
+            (assets_dir / filename).write_bytes(response.body())
+            result[asset_url] = str(Path("assets") / filename).replace("\\", "/")
+        except Exception:
+            continue
     return result
 
 
