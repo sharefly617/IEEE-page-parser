@@ -1,4 +1,4 @@
-# IEEE 论文网页归档工具 / IEEE Paper Web Archiver
+# IEEE 论文解析工具 / IEEE Paper Parser
 
 本项目用于归档操作者有权访问的 IEEE 论文网页，并生成原始 HTML、Markdown 和 IEEEtran LaTeX 工程。  
 This project archives IEEE paper pages that the operator is authorized to access and produces raw HTML, Markdown, and an IEEEtran LaTeX project.
