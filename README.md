@@ -160,3 +160,6 @@ python -m pytest -q
 
 测试不需要登录 IEEE，覆盖 MathJax、Markdown、IEEEtran 结构、正文清理、资源安全和参考文献处理。  
 Tests do not require an IEEE session and cover MathJax, Markdown, IEEEtran structure, content cleaning, asset safety, and references.
+
+## 社区
+[Linux do](https://linux.do/)
