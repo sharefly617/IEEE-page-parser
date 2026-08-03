@@ -6,15 +6,6 @@ This project archives IEEE paper pages that the operator is authorized to access
 项目使用 Playwright 控制真实浏览器，等待动态内容和 MathJax 完成渲染。工具不会自动输入账号密码、处理验证码、绕过付费墙或规避其他访问控制。  
 It uses Playwright to control a real browser and wait for dynamic content and MathJax rendering. It never enters credentials, solves CAPTCHAs, bypasses paywalls, or circumvents access controls.
 
-## 合规边界 / Compliance
-
-- 只处理用户明确指定且拥有授权的 URL，并遵守 IEEE 服务条款、`robots.txt`、版权要求和合理访问频率。  
-  Process only explicitly specified URLs you are authorized to access, following IEEE terms, `robots.txt`, copyright requirements, and reasonable request rates.
-- 默认串行运行，支持延迟、超时和有限重试。  
-  Processing is serial by default with configurable delays, timeouts, and limited retries.
-- 登录失效、验证码和付费墙由用户在浏览器中合法处理，工具不会自动绕过。  
-  The user must handle expired login, CAPTCHAs, and paywalls lawfully in the browser; the tool does not bypass them.
-
 ## 安装 / Installation
 
 ```powershell
