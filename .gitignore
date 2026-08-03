@@ -20,7 +20,7 @@ env/
 
 # Data & results
 output/
-
+新建文本文档.txt
 
 # Model checkpoints
 *.pt
