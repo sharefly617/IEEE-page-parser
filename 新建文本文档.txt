@@ -1,1 +1,0 @@
-python main.py --url "https://ieeexplore.ieee.org/document/10815057" --output .\output --format all --wait-for-mathjax --save-screenshot --offline-check
